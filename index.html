@@ -1,73 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OTP Login Demo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: #333;
-    }
-    .container {
-      background: #fff;
-      padding: 20px 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 300px;
-    }
-    input {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:disabled {
-      background: #aaa;
-    }
-    #otp-section {
-      display: none;
-    }
-    #message, #otp-hint {
-      margin-top: 10px;
-      font-size: 14px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>OTP Login</h2>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Login</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: #f2f4f8;
+      }
+      .container {
+        background: #fff;
+        padding: 25px 35px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        width: 320px;
+        text-align: center;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        margin-top: 15px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #999;
+      }
+      .message {
+        margin-top: 15px;
+        color: #555;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>OTP Login</h2>
+      <input type="text" id="phone" placeholder="Enter phone number" />
+      <button id="sendOtpBtn">Send OTP</button>
 
-    <input id="phone" type="text" placeholder="Enter phone number" />
-    <button id="send-otp">Send OTP</button>
+      <div id="verifySection" style="display: none;">
+        <input type="text" id="otpInput" placeholder="Enter OTP" />
+        <button id="verifyBtn">Verify OTP</button>
+      </div>
 
-    <div id="otp-section">
-      <input id="otp" type="text" placeholder="Enter OTP" />
-      <button id="verify-otp">Verify OTP</button>
+      <div class="message" id="message"></div>
+      <div class="message" id="otpHint"></div>
     </div>
 
-    <div id="message"></div>
-    <div id="otp-hint"></div>
-  </div>
+    <script>
+      const sendOtpBtn = document.getElementById("sendOtpBtn");
+      const verifyBtn = document.getElementById("verifyBtn");
+      const phoneInput = document.getElementById("phone");
+      const otpInput = document.getElementById("otpInput");
+      const messageDiv = document.getElementById("message");
+      const otpHint = document.getElementById("otpHint");
+      const verifySection = document.getElementById("verifySection");
 
-  <script src="app.js"></script>
-</body>
+      const BASE_URL = "https://login-zaa0.onrender.com"; // change if your Render URL is different
+
+      sendOtpBtn.addEventListener("click", async () => {
+        const phone = phoneInput.value.trim();
+        if (!phone) return alert("Enter phone number");
+
+        sendOtpBtn.disabled = true;
+        messageDiv.textContent = "Sending OTP...";
+
+        try {
+          const res = await fetch(`${BASE_URL}/send-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Server error");
+
+          otpHint.textContent = "Demo OTP: " + data.otp;
+          messageDiv.textContent = "OTP sent successfully!";
+          verifySection.style.display = "block";
+        } catch (err) {
+          messageDiv.textContent = "Failed to send OTP: " + err.message;
+        } finally {
+          sendOtpBtn.disabled = false;
+        }
+      });
+
+      verifyBtn.addEventListener("click", async () => {
+        const otp = otpInput.value.trim();
+        const phone = phoneInput.value.trim();
+        if (!otp) return alert("Enter OTP");
+
+        verifyBtn.disabled = true;
+        messageDiv.textContent = "Verifying...";
+
+        try {
+          const res = await fetch(`${BASE_URL}/verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone, otp }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Verification failed");
+
+          messageDiv.textContent = "✅ Login successful! Token: " + data.token;
+          otpHint.textContent = "";
+        } catch (err) {
+          messageDiv.textContent = "Verification failed: " + err.message;
+        } finally {
+          verifyBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
 </html>
