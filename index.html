@@ -1,0 +1,48 @@
+<!doctype html>
+const res = await fetch('/send-otp', {
+method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+});
+
+
+const data = await res.json();
+if (!res.ok) throw new Error(data.message || 'Server error');
+
+
+lastSentOtp = data.otp; // demo only — server returns OTP for demo
+otpHint.textContent = 'Demo OTP: ' + lastSentOtp;
+verifySection.style.display = 'block';
+messageDiv.textContent = 'OTP sent — check the demo hint below.';
+
+
+} catch (err) {
+console.error(err);
+messageDiv.textContent = 'Failed to request OTP: ' + err.message;
+} finally {
+sendOtpBtn.disabled = false;
+}
+});
+
+
+verifyBtn.addEventListener('click', async () => {
+const otp = otpInput.value.trim();
+if (!otp) return;
+verifyBtn.disabled = true;
+messageDiv.textContent = '';
+
+
+try {
+const fp = JSON.parse(browserFpData.value || '{}');
+const res = await fetch('/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phoneInput.value, otp, fp_hash: fp.fp_hash }) });
+const j = await res.json();
+if (!res.ok) throw new Error(j.message || 'Verify failed');
+messageDiv.textContent = 'Login successful! Token: ' + (j.token || '[demo]');
+otpHint.textContent = '';
+} catch (err) {
+messageDiv.textContent = 'Verification failed: ' + err.message;
+} finally {
+verifyBtn.disabled = false;
+}
+});
+</script>
+</body>
+</html>
