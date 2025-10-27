@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -9,62 +10,49 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ✅ Middlewares
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(__dirname)); // serve index.html
 
-// ✅ Serve static frontend (index.html, app.js)
-app.use(express.static(path.join(__dirname)));
-
-// ✅ In-memory OTP store
+// Store OTPs temporarily
 const otpStore = new Map();
 
-// ---------------- ROUTES ---------------- //
+// --- ROUTES ---
 
-// 🔹 Send OTP
+// Send OTP route
 app.post("/send-otp", (req, res) => {
   try {
     const { phone } = req.body || {};
-    if (!phone) {
-      return res.status(400).json({ message: "Phone number required" });
-    }
+    if (!phone) return res.status(400).json({ message: "Phone number required" });
 
+    // Generate random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore.set(phone, otp);
 
-    console.log(`✅ Generated OTP for ${phone}: ${otp}`);
-    return res.status(200).json({ otp, message: "OTP sent successfully" });
-  } catch (error) {
-    console.error("❌ Error in /send-otp:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    console.log(`✅ OTP for ${phone}: ${otp}`);
+    res.json({ otp, message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("Send OTP Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🔹 Verify OTP
+// Verify OTP route
 app.post("/verify-otp", (req, res) => {
-  try {
-    const { phone, otp } = req.body || {};
-    if (!phone || !otp) {
-      return res.status(400).json({ message: "Phone and OTP required" });
-    }
+  const { phone, otp } = req.body || {};
+  if (!phone || !otp) return res.status(400).json({ message: "Phone and OTP required" });
 
-    const validOtp = otpStore.get(phone);
-    if (!validOtp) return res.status(400).json({ message: "OTP expired or invalid" });
-    if (validOtp !== otp) return res.status(401).json({ message: "Incorrect OTP" });
+  const validOtp = otpStore.get(phone);
+  if (validOtp !== otp) return res.status(401).json({ message: "Invalid OTP" });
 
-    otpStore.delete(phone);
-    return res.json({ token: "demo-token-12345", message: "OTP verified successfully" });
-  } catch (error) {
-    console.error("❌ Error in /verify-otp:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
-  }
+  otpStore.delete(phone);
+  res.json({ token: "demo-token-12345", message: "OTP verified successfully" });
 });
 
-// ---------------- DEFAULT ---------------- //
-app.use((req, res) => {
-  res.status(404).json({ message: "Not found" });
-});
+// 404 for unknown routes
+app.use((req, res) => res.status(404).json({ message: "Not found" }));
 
-// ✅ Render Port
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
