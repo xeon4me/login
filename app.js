@@ -26,7 +26,12 @@ sendOtpBtn.addEventListener('click', async () => {
       body: JSON.stringify({ phone })
     });
 
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('Invalid JSON response from server');
+    }
 
     if (!res.ok) throw new Error(data.message || 'Server error');
 
@@ -36,38 +41,8 @@ sendOtpBtn.addEventListener('click', async () => {
     messageDiv.textContent = 'OTP sent successfully!';
   } catch (err) {
     messageDiv.textContent = 'Failed to send OTP: ' + err.message;
+    console.error(err);
   } finally {
     sendOtpBtn.disabled = false;
-  }
-});
-
-// ✅ Verify OTP
-verifyBtn.addEventListener('click', async () => {
-  const otp = otpInput.value.trim();
-  if (!otp) {
-    messageDiv.textContent = 'Enter the OTP first.';
-    return;
-  }
-
-  verifyBtn.disabled = true;
-  messageDiv.textContent = 'Verifying OTP...';
-
-  try {
-    const res = await fetch('/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phoneInput.value, otp })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) throw new Error(data.message || 'Verification failed.');
-
-    messageDiv.textContent = '✅ Login successful! Token: ' + (data.token || '[demo]');
-    otpHint.textContent = '';
-  } catch (err) {
-    messageDiv.textContent = '❌ Verification failed: ' + err.message;
-  } finally {
-    verifyBtn.disabled = false;
   }
 });
